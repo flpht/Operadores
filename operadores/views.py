@@ -1,49 +1,36 @@
 # operadores/views.py
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Operador, AreaCentroCosto # Importamos ambos modelos
+from .models import Operador, AreaCentroCosto 
 from .forms import OperadorForm
-import json # Importamos json
+import json
+from django.contrib import messages
 
 def lista_operadores(request):
     """
-    Esta vista maneja la LISTA (GET)
-    y el formulario para AGREGAR (POST).
+    Esta es mi vista principal. Maneja la LISTA (GET)
+    y también el formulario para AGREGAR (POST).
     """
     
     if request.method == 'POST':
         form = OperadorForm(request.POST)
         if form.is_valid():
-            
-            # --- ¡AQUÍ ESTÁ LA MODIFICACIÓN! ---
-            # 1. Crea el objeto en memoria, pero NO lo guardes en la BD todavía
             operador = form.save(commit=False)
-            
-            # 2. Añade tus valores predeterminados (basado en la imagen)
             operador.EmpresaId = 1
             operador.Horario = 1
             operador.password = 0
-            
-            # (No necesitas añadir 'privilege', 'password', etc.
-            # La base de datos lo hará sola.)
-
-            # 3. Ahora sí, guarda el objeto completo en la BD
             operador.save()
-            # --- FIN DE LA MODIFICACIÓN ---
-            
+            messages.success(request, f"¡Operador '{operador.Nombre}' agregado con éxito!")
             return redirect('lista_operadores')
-        # Si no es válido, se re-renderiza con el formulario mostrando errores
-    
+        else:
+            messages.error(request, "Error al agregar. Revisa los campos del formulario.")
     else:
-        # Si es GET, crea un formulario vacío
         form = OperadorForm()
 
     # --- LÓGICA PARA LOS DROPDOWNS ---
+    # (Esta parte ya la teníamos, la usamos para los dropdowns Y para el mapa)
     centros_costo = AreaCentroCosto.objects.all()
     
-    # 1. Crear lista de áreas únicas
     areas_unicas = sorted(list(set(c.Area for c in centros_costo if c.Area)))
-
-    # 2. Crear un diccionario para el cascading en JS
     areas_data = {}
     for area in areas_unicas:
         areas_data[area] = []
@@ -51,39 +38,60 @@ def lista_operadores(request):
     for c in centros_costo:
         if c.Area in areas_data:
             areas_data[c.Area].append({
-                
-                # Convertimos el Decimal a int para que JSON pueda leerlo
                 'id': int(c.IdCentroCosto), 
-                # ---------------------------------
-                
                 'maquina': c.Maquina
             })
-    # --- FIN LÓGICA DROPDOWNS ---
+    
+    # --- ¡NUEVA LÓGICA PARA LA TABLA! ---
+    # 1. Creo un "mapa" de búsqueda rápido: {IdCentroCosto: NombreDelArea}
+    #    Ej: {1108: 'Extrusion', 1207: 'Impresion', 1319: 'Sellado'}
+    area_map = {c.IdCentroCosto: c.Area for c in centros_costo}
 
-    # Obtiene la lista de operadores (para la tabla)
+    # 2. Busco todos mis operadores
     operadores = Operador.objects.all().order_by('Nombre')
+
+    # 3. Recorro los operadores y les "inyecto" el nombre del Área
+    for op in operadores:
+        # op.CentroCosto es el ID (ej: 1108)
+        # area_map.get(...) busca ese ID en el mapa
+        op.area_nombre = area_map.get(op.CentroCosto, '---') # '---' si no lo encuentra
+    # --- FIN DE LA NUEVA LÓGICA ---
     
     contexto = {
-        'operadores': operadores,
-        'form': form, # El formulario (con el campo CentroCosto oculto)
-        'areas_unicas': areas_unicas, # Para el primer dropdown
-        'areas_data_json': json.dumps(areas_data), # Datos para JS
+        'operadores': operadores, # Mi lista de operadores ahora tiene '.area_nombre'
+        'form': form,
+        'areas_unicas': areas_unicas,
+        'areas_data_json': json.dumps(areas_data),
     }
     return render(request, 'lista_operadores.html', contexto)
 
 
 def eliminar_operador(request, pk):
     """
-    Busca un operador por su CodigoID (pk) y lo elimina,
-    mostrando una página de confirmación primero (si es GET).
+    Mi vista para eliminar (con mensaje de éxito).
     """
     operador = get_object_or_404(Operador, CodigoID=pk)
     
-    # Si esta vista se llama desde un link (GET), muestra confirmación
     if request.method == 'GET':
         return render(request, 'eliminar_operador.html', {'operador': operador})
 
-    # Si se llama desde el formulario de confirmación (POST)
     elif request.method == 'POST':
+        messages.success(request, f"Operador '{operador.Nombre}' eliminado correctamente.")
+        operador.delete()
+        return redirect('lista_operadores')
+
+def eliminar_operador(request, pk):
+    """
+    Busca un operador por su CodigoID (pk) y lo elimina.
+    """
+    operador = get_object_or_404(Operador, CodigoID=pk)
+    
+    if request.method == 'GET':
+        return render(request, 'eliminar_operador.html', {'operador': operador})
+
+    elif request.method == 'POST':
+        # --- ¡NUEVA LÍNEA! ---
+        # Añade un mensaje de éxito al eliminar
+        messages.success(request, f"Operador '{operador.Nombre}' eliminado correctamente.")
         operador.delete()
         return redirect('lista_operadores')
