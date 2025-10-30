@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{# Si tu base.html no tiene estos bloques, puedes mover el <link> al interior de block content #}
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'css/shifts.css' %}">
 {% endblock %}
@@ -46,12 +45,15 @@
 
     <!-- Grid de turnos -->
     <main class="shifts-grid">
+      <!-- Las columnas se llenan por JS. Para fallback quedan estas tres vacías -->
       <section class="shift-col" data-shift="1">
         <header>
           <h4>Turno 1 — Mañana</h4>
           <button class="add-to-shift" data-shift="1" type="button">+</button>
         </header>
-        <ul class="shift-drop" data-shift="1"></ul>
+        <div class="shift-container">
+          <ul class="shift-drop" data-shift="1"></ul>
+        </div>
       </section>
 
       <section class="shift-col" data-shift="2">
@@ -59,7 +61,9 @@
           <h4>Turno 2 — Tarde</h4>
           <button class="add-to-shift" data-shift="2" type="button">+</button>
         </header>
-        <ul class="shift-drop" data-shift="2"></ul>
+        <div class="shift-container">
+          <ul class="shift-drop" data-shift="2"></ul>
+        </div>
       </section>
 
       <section class="shift-col" data-shift="3">
@@ -67,7 +71,9 @@
           <h4>Turno 3 — Noche</h4>
           <button class="add-to-shift" data-shift="3" type="button">+</button>
         </header>
-        <ul class="shift-drop" data-shift="3"></ul>
+        <div class="shift-container">
+          <ul class="shift-drop" data-shift="3"></ul>
+        </div>
       </section>
     </main>
 
