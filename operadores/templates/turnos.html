@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{# Si tu base.html no tiene estos bloques, puedes mover el <link> al interior de block content #}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/shifts.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="shifts-app">
+
+  <header class="shifts-topbar">
+    <nav class="shifts-tabs" id="areaTabs">
+      <button data-area="Extrusión" class="active">Extrusión</button>
+      <button data-area="Mezclado">Mezclado</button>
+      <button data-area="Laminado">Laminado</button>
+      <button data-area="Impresión">Impresión</button>
+      <button data-area="Sellado">Sellado</button>
+      <button data-area="Corte">Corte</button>
+    </nav>
+
+    <div class="shifts-controls">
+      <label>
+        Fecha
+        <input type="date" id="datePicker">
+      </label>
+      <button id="clearDay" class="btn-outline" type="button">Limpiar día</button>
+    </div>
+  </header>
+
+  <div class="shifts-body">
+
+    <!-- Sidebar operadores -->
+    <aside class="operators">
+      <div class="operators-head">
+        <h3>Operadores</h3>
+        <button id="btnAddOperator" class="btn" type="button">+ Agregar</button>
+      </div>
+
+      <div class="operators-search">
+        <input type="text" id="opSearch" placeholder="Buscar operador…">
+      </div>
+
+      <ul id="opList" class="operators-list"></ul>
+    </aside>
+
+    <!-- Grid de turnos -->
+    <main class="shifts-grid">
+      <section class="shift-col" data-shift="1">
+        <header>
+          <h4>Turno 1 — Mañana</h4>
+          <button class="add-to-shift" data-shift="1" type="button">+</button>
+        </header>
+        <ul class="shift-drop" data-shift="1"></ul>
+      </section>
+
+      <section class="shift-col" data-shift="2">
+        <header>
+          <h4>Turno 2 — Tarde</h4>
+          <button class="add-to-shift" data-shift="2" type="button">+</button>
+        </header>
+        <ul class="shift-drop" data-shift="2"></ul>
+      </section>
+
+      <section class="shift-col" data-shift="3">
+        <header>
+          <h4>Turno 3 — Noche</h4>
+          <button class="add-to-shift" data-shift="3" type="button">+</button>
+        </header>
+        <ul class="shift-drop" data-shift="3"></ul>
+      </section>
+    </main>
+
+  </div>
+</div>
+
+<!-- Modal agregar operador -->
+<div class="modal" id="opModal" hidden aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="opModalTitle">
+    <h3 id="opModalTitle">Agregar operador</h3>
+    <label>Nombre
+      <input type="text" id="opName" autocomplete="off">
+    </label>
+    <label>Rol
+      <select id="opRole">
+        <option>Operador</option>
+        <option>Supervisor</option>
+        <option>Ayudante</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button id="opSave" class="btn" type="button">Guardar</button>
+      <button id="opCancel" class="btn-outline" type="button">Cancelar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/shifts.js' %}" defer></script>
+{% endblock %}

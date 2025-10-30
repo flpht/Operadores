@@ -80,18 +80,7 @@ def eliminar_operador(request, pk):
         operador.delete()
         return redirect('lista_operadores')
 
-def eliminar_operador(request, pk):
-    """
-    Busca un operador por su CodigoID (pk) y lo elimina.
-    """
-    operador = get_object_or_404(Operador, CodigoID=pk)
+def turnos(request):
+    contexto = {} 
     
-    if request.method == 'GET':
-        return render(request, 'eliminar_operador.html', {'operador': operador})
-
-    elif request.method == 'POST':
-        # --- ¡NUEVA LÍNEA! ---
-        # Añade un mensaje de éxito al eliminar
-        messages.success(request, f"Operador '{operador.Nombre}' eliminado correctamente.")
-        operador.delete()
-        return redirect('lista_operadores')
+    return render(request, 'turnos.html', contexto)
