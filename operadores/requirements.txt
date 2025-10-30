@@ -1,0 +1,7 @@
+# --- Mi Framework Principal ---
+# Esta es la versión exacta de Django que estoy usando 
+django==5.2.6
+
+# --- Conexión a la Base de Datos ---
+# Este es el paquete que necesito para que Django se conecte a mi SQL Server.
+mssql-django
