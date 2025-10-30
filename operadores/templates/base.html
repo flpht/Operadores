@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Operadores</title>
+    
+    <link rel="stylesheet" href="{% static 'styles/lista_operadores.css' %}">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+</head>
+<body>
+    
+    <nav class="header-nav">
+        <a href="#" id="btn-show-list" class="active">
+            <i class="fa-solid fa-list-ul"></i> LISTAR OPERADORES
+        </a>
+        <a href="#" id="btn-show-add">
+            <i class="fa-solid fa-plus"></i> AGREGAR OPERADOR
+        </a>
+        </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="{% static 'js/operadores.js' %}"></script>
+</body>
+</html>

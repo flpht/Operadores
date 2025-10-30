@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    
+<div class="page-content" id="page-content">
+
+    <div class="directory-panel" id="directory-panel">
+        <div class="directory-header">
+            <h2>Operadores</h2>
+        </div>
+        
+        <div class="filter-bar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-input" placeholder="Buscar por Nombre, RUT, Código o C. Costo...">
+            </div>
+        </div>
+
+        <div class="tabla-scroll-container">
+            <table class="operador-table" id="operador-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Código</th>
+                        <th>RUT</th>
+                        <th>C. Costo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body">
+                    {% for op in operadores %}
+                        <tr>
+                            <td><strong>{{ op.Nombre }}</strong></td>
+                            <td>{{ op.CodigoID }}</td>
+                            <td>{{ op.Rut }}</td>
+                            <td>{{ op.CentroCosto }}</td>
+                            <td>
+                                {% if op.Activo %}
+                                    <span class="status activo">Activo</span>
+                                {% else %}
+                                    <span class="status inactivo">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="#" class="btn btn-edit" title="Editar">
+                                        <i class="fa-solid fa-pencil"></i>
+                                    </a>
+                                   
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px;">
+                                No hay operadores registrados.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div> <div class="form-panel" id="form-panel">
+        <h2><i class="fa-solid fa-user-plus"></i> Agregar Nuevo Operador</h2>
+        
+        <form method="POST" action="{% url 'lista_operadores' %}">
+            {% csrf_token %}
+            
+            {% if form.non_field_errors %}
+                <div class="form-errors">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <p>
+                <label for="{{ form.CodigoID.id_for_label }}">Código Operador:</label>
+                {{ form.CodigoID }}
+                {% if form.CodigoID.errors %}<span class="error-text">{{ form.CodigoID.errors.as_text }}</span>{% endif %}
+            </p>
+
+            <p>
+                <label for="{{ form.Nombre.id_for_label }}">Nombre:</label>
+                {{ form.Nombre }}
+                {% if form.Nombre.errors %}<span class="error-text">{{ form.Nombre.errors.as_text }}</span>{% endif %}
+            </p>
+            
+            <p>
+                <label for="{{ form.Rut.id_for_label }}">Rut:</label>
+                {{ form.Rut }}
+                {% if form.Rut.errors %}<span class="error-text">{{ form.Rut.errors.as_text }}</span>{% endif %}
+            </p>
+
+            <p>
+                <label for="select-area">Área:</label>
+                <select id="select-area" name="select_area">
+                    <option value="">-- Seleccione un área --</option>
+                    {% for area in areas_unicas %}
+                        <option value="{{ area }}">{{ area }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+
+            <p>
+                <label for="select-maquina">Máquina / Centro Costo:</label>
+                <select id="select-maquina" name="select_maquina" disabled>
+                    <option value="">-- Primero seleccione un área --</option>
+                </select>
+            </p>
+            <p class="checkbox-field"> {{ form.Activo }}
+                <label for="{{ form.Activo.id_for_label }}">Activo</label>
+            </p>
+
+            {{ form.CentroCosto }}
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-save"></i> Guardar Operador
+            </button>
+        </form>
+    </div> </div> <script id="areas-data" type="application/json">
+    {{ areas_data_json|safe }}
+</script>
+
+{% endblock %}

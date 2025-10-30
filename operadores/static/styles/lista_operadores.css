@@ -1,0 +1,225 @@
+/* Este es mi archivo de estilos principal */
+
+/* --- 1. GENERALES Y VARIABLES --- */
+:root {
+    --color-primario: #007bff;
+    --color-primario-hover: #0056b3;
+    --color-peligro: #dc3545;
+    --color-peligro-hover: #c82333;
+    --color-secundario: #6c757d;
+    --color-fondo-body: #f8f9fa;
+    --color-fondo-panel: #ffffff;
+    --color-borde: #e9ecef;
+    --color-texto: #343a40;
+    --color-texto-claro: #6c757d;
+    --sombra-panel: 0 4px 20px rgba(0,0,0,0.05);
+    --radio-borde: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    margin: 0; 
+    background-color: var(--color-fondo-body); 
+    color: var(--color-texto);
+}
+
+/* --- 2. MI BARRA DE NAVEGACIÓN SUPERIOR --- */
+.header-nav {
+    background-color: var(--color-fondo-panel);
+    padding: 15px 30px;
+    border-bottom: 2px solid var(--color-borde);
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.header-nav a {
+    text-decoration: none;
+    padding: 10px 20px;
+    font-weight: 600;
+    font-size: 0.9em;
+    border-radius: var(--radio-borde);
+    color: var(--color-texto-claro);
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+/* Esta clase 'active' la controlo con JS */
+.header-nav a.active,
+.header-nav a:hover {
+    color: var(--color-primario);
+    background-color: #e7f3ff;
+    border-color: #b3d7ff;
+}
+
+/* --- 3. MI CONTENEDOR PRINCIPAL (de base.html) --- */
+.container {
+    max-width: 1600px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+/* --- 4. MI LAYOUT DE DOS COLUMNAS --- */
+.page-content {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+/* Panel izquierdo (Tabla) */
+.directory-panel {
+    flex: 1; /* Ocupa todo el espacio por defecto */
+    background-color: var(--color-fondo-panel);
+    border-radius: var(--radio-borde);
+    box-shadow: var(--sombra-panel);
+    padding: 30px;
+    transition: flex 0.4s ease; /* Transición suave */
+}
+
+/* Panel derecho (Formulario) */
+.form-panel {
+    flex: 1; /* Ocupará 1/3 cuando esté visible */
+    background-color: var(--color-fondo-panel);
+    border-radius: var(--radio-borde);
+    box-shadow: var(--sombra-panel);
+    padding: 30px;
+    position: sticky;
+    top: 20px;
+    
+    /* ¡IMPORTANTE! Lo oculto por defecto, mi JS lo mostrará */
+    display: none; 
+}
+
+/* --- 5. PANEL IZQUIERDO (Directorio y Tabla) --- */
+.directory-header { margin-bottom: 25px; }
+.directory-header h2 { margin: 0 0 5px 0; color: #2c3e50; font-size: 2em; }
+.filter-bar { display: flex; gap: 15px; margin-bottom: 25px; }
+.search-box { position: relative; flex-grow: 1; }
+
+.search-box i {
+    position: absolute; left: 15px; top: 50%;
+    transform: translateY(-50%); color: #aaa;
+}
+.search-box input[type="text"] {
+    padding: 12px 15px 12px 40px;
+    border: 2px solid var(--color-borde);
+    border-radius: 8px; width: 100%; font-size: 1em;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.search-box input[type="text"]:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+    outline: none;
+}
+.tabla-scroll-container { max-height: 70vh; overflow-y: auto; }
+.operador-table { width: 100%; border-collapse: collapse; }
+.operador-table th, .operador-table td {
+    padding: 16px; border-bottom: 1px solid var(--color-borde);
+    text-align: left; vertical-align: middle;
+}
+.operador-table th {
+    position: sticky; top: 0; z-index: 1;
+    background-color: var(--color-fondo-panel);
+    color: var(--color-texto-claro);
+    font-weight: 600; text-transform: uppercase; font-size: 0.8em;
+}
+.operador-table tbody tr:hover { background-color: #f1f3f5; }
+.operador-table td strong { color: var(--color-primario-hover); font-weight: 600; }
+
+/* --- 6. PANEL DERECHO (Formulario) --- */
+.form-panel h2 {
+    margin-top: 0; margin-bottom: 25px; color: #2c3e50;
+    font-size: 1.5em; border-bottom: 2px solid var(--color-borde);
+    padding-bottom: 10px;
+}
+.form-panel form p { display: flex; flex-direction: column; margin-bottom: 18px; }
+.form-panel form label {
+    font-weight: 600; font-size: 0.9em;
+    color: var(--color-texto-claro); margin-bottom: 8px;
+}
+.form-panel form input[type="text"],
+.form-panel form input[type="number"] {
+    padding: 12px 15px; border: 2px solid var(--color-borde);
+    border-radius: 8px; font-size: 1em;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.form-panel form input[type="text"]:focus,
+.form-panel form input[type="number"]:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+    outline: none;
+}
+/* Mis nuevos estilos para los dropdowns (select) */
+.form-panel form select {
+    padding: 12px 15px;
+    border: 2px solid var(--color-borde);
+    border-radius: 8px;
+    font-size: 1em;
+    background-color: white;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    width: 100%;
+}
+.form-panel form select:focus {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 3px rgba(0,123,255,0.2);
+    outline: none;
+}
+.form-panel form select:disabled {
+    background-color: #f8f9fa;
+    color: #aaa;
+}
+/* Estilo para mi checkbox 'Activo' */
+.form-panel form p.checkbox-field {
+    flex-direction: row;
+    align-items: center;
+}
+.form-panel form p.checkbox-field label {
+    margin-bottom: 0;
+    margin-left: 10px;
+    text-transform: none;
+}
+.form-panel form p.checkbox-field input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+/* Estilo para los mensajes de error del formulario */
+.form-panel .error-text {
+    color: var(--color-peligro);
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* --- 7. BOTONES --- */
+.btn {
+    text-decoration: none; padding: 10px 15px; border-radius: 8px;
+    font-weight: bold; font-size: 0.9em; border: none;
+    cursor: pointer; display: inline-flex; align-items: center;
+    justify-content: center; gap: 8px; transition: all 0.3s ease;
+}
+.btn-primary { background-color: var(--color-primario); color: white; width: 100%; }
+.btn-primary:hover { background-color: var(--color-primario-hover); }
+
+/* Mis botones de Acción en la tabla (Editar/Eliminar) */
+.action-buttons { display: flex; gap: 10px; }
+
+.btn-edit, .btn-danger {
+    padding: 8px 12px;
+    font-size: 0.85em;
+    width: auto; /* Para que no ocupen el 100% */
+}
+
+.btn-edit { background-color: var(--color-secundario); color: white; }
+.btn-edit:hover { background-color: #5a6268; }
+
+.btn-danger { background-color: var(--color-peligro); color: white; }
+.btn-danger:hover { background-color: var(--color-peligro-hover); }
+
+/* Etiquetas de Status */
+.status { 
+    padding: 5px 12px; border-radius: 15px; font-size: 0.85em; 
+    font-weight: 600; text-transform: uppercase;
+}
+.status.activo { background-color: #d4edda; color: #155724; }
+.status.inactivo { background-color: #f8d7da; color: #721c24; }
