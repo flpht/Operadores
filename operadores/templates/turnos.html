@@ -2,10 +2,13 @@
 {% load static %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'css/shifts.css' %}">
 {% endblock %}
 
 {% block content %}
+
+<!-- PUNTO EXACTO donde debe comenzar la app (debajo de la franja amarilla) -->
+<div id="turnos-anchor"></div>
+
 <div class="shifts-app">
 
   <header class="shifts-topbar">
@@ -28,7 +31,6 @@
   </header>
 
   <div class="shifts-body">
-
     <!-- Sidebar operadores -->
     <aside class="operators">
       <div class="operators-head">
@@ -45,7 +47,7 @@
 
     <!-- Grid de turnos -->
     <main class="shifts-grid">
-      <!-- Las columnas se llenan por JS. Para fallback quedan estas tres vacías -->
+      <!-- Turno 1 -->
       <section class="shift-col" data-shift="1">
         <header>
           <h4>Turno 1 — Mañana</h4>
@@ -56,6 +58,7 @@
         </div>
       </section>
 
+      <!-- Turno 2 -->
       <section class="shift-col" data-shift="2">
         <header>
           <h4>Turno 2 — Tarde</h4>
@@ -66,6 +69,7 @@
         </div>
       </section>
 
+      <!-- Turno 3 -->
       <section class="shift-col" data-shift="3">
         <header>
           <h4>Turno 3 — Noche</h4>
@@ -76,7 +80,6 @@
         </div>
       </section>
     </main>
-
   </div>
 </div>
 
@@ -100,6 +103,7 @@
     </div>
   </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}

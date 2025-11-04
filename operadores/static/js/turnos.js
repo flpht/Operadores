@@ -317,3 +317,101 @@ document.addEventListener('DOMContentLoaded', () => {
   renderOperators();
   renderShifts();
 });
+
+// =============================
+// 1) Ajuste de altura (offset)
+// =============================
+document.addEventListener('DOMContentLoaded', () => {
+  const root = document.documentElement;
+  const anchor = document.getElementById('turnos-anchor');
+
+  function setAppTop() {
+  const top = anchor ? Math.ceil(anchor.getBoundingClientRect().bottom) : 0;
+  const EXTRA = 20; // súbelo un poquito (ajusta 8–20px a gusto)
+  const newTop = Math.max(0, top - EXTRA);
+  root.style.setProperty('--app-top', `${newTop}px`);
+}
+
+  setAppTop();
+  window.addEventListener('resize', setAppTop);
+  // Recalcula por si cambian fuentes o carga algo arriba
+  setTimeout(setAppTop, 150);
+});
+
+// ===================================================
+// 2) (Opcional) Hooks mínimos para que todo responda
+//    — Si ya tienes lógica de drag&drop/asignación,
+//      puedes mantenerla debajo de este bloque.
+// ===================================================
+document.addEventListener('DOMContentLoaded', () => {
+  // Tabs de áreas (visual)
+  const tabs = document.querySelectorAll('.shifts-tabs button');
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabs.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Dispara aquí tu carga de operadores/turnos por área si aplica
+    });
+  });
+
+  // Abrir / cerrar modal agregar operador
+  const modal = document.getElementById('opModal');
+  const btnAdd = document.getElementById('btnAddOperator');
+  const btnCancel = document.getElementById('opCancel');
+  const btnSave = document.getElementById('opSave');
+
+  if (btnAdd && modal) {
+    btnAdd.addEventListener('click', () => modal.hidden = false);
+  }
+  if (btnCancel && modal) {
+    btnCancel.addEventListener('click', () => modal.hidden = true);
+  }
+  if (btnSave && modal) {
+    btnSave.addEventListener('click', () => {
+      // Aquí podrías crear el operador y refrescar la lista...
+      modal.hidden = true;
+    });
+  }
+
+  // Búsqueda de operadores (client-side)
+  const search = document.getElementById('opSearch');
+  const list = document.getElementById('opList');
+  if (search && list) {
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      list.querySelectorAll('.operator-item').forEach(li => {
+        const t = (li.textContent || '').toLowerCase();
+        li.style.display = t.includes(q) ? '' : 'none';
+      });
+    });
+  }
+
+  // Botón limpiar día (placeholder)
+  const clearDay = document.getElementById('clearDay');
+  if (clearDay) {
+    clearDay.addEventListener('click', () => {
+      document.querySelectorAll('.shift-drop').forEach(ul => ul.innerHTML = '');
+    });
+  }
+
+  // Add-to-shift (placeholder)
+  document.querySelectorAll('.add-to-shift').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ul = document.querySelector(`.shift-drop[data-shift="${btn.dataset.shift}"]`);
+      if (!ul) return;
+      const li = document.createElement('li');
+      li.className = 'card';
+      li.innerHTML = `
+        <div>
+          <div><strong>OPERADOR DEMO</strong></div>
+          <div class="meta">Supervisor</div>
+        </div>
+        <div class="actions">
+          <button type="button" title="Quitar">×</button>
+        </div>`;
+      li.querySelector('.actions button').addEventListener('click', () => li.remove());
+      ul.appendChild(li);
+    });
+  });
+});
+

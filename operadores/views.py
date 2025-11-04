@@ -4,6 +4,9 @@ from .models import Operador, AreaCentroCosto
 from .forms import OperadorForm
 import json
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.db import connection
 
 def lista_operadores(request):
     """
@@ -48,7 +51,7 @@ def lista_operadores(request):
     area_map = {c.IdCentroCosto: c.Area for c in centros_costo}
 
     # 2. Busco todos mis operadores
-    operadores = Operador.objects.all().order_by('Nombre')
+    operadores = Operador.objects.filter(Activo=True).order_by('Nombre')
 
     # 3. Recorro los operadores y les "inyecto" el nombre del Área
     for op in operadores:
@@ -84,3 +87,32 @@ def turnos(request):
     contexto = {} 
     
     return render(request, 'turnos.html', contexto)
+@require_GET
+def api_operadores_por_area(request):
+    """
+    GET /turnos/api/operadores?area=Extrusión
+    Devuelve operadores de Operadores_Areas, opcionalmente filtrados por Activo=1 en RelojEmpleados.
+    """
+    area = request.GET.get("area")
+    if not area:
+        return JsonResponse({"error": "Parámetro 'area' es requerido"}, status=400)
+
+    # IMPORTANTE: si no quieres filtrar por activos, quita el INNER JOIN y la condición o.Activo=1
+    sql = """
+        SELECT oa.Codoperador, oa.Nombre, oa.Area
+        FROM Operadores_Areas AS oa
+        INNER JOIN RelojEmpleados AS o
+            ON o.CodigoID = oa.Codoperador
+        WHERE oa.Area = %s
+          AND o.Activo = 1
+        ORDER BY oa.Nombre
+    """
+    with connection.cursor() as cur:
+        cur.execute(sql, [area])
+        rows = cur.fetchall()
+
+    items = [
+        {"CodigoID": r[0], "Nombre": r[1], "Rol": "Operador"}  # si más adelante tienes rol, cámbialo aquí
+        for r in rows
+    ]
+    return JsonResponse({"items": items})
