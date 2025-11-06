@@ -9,20 +9,36 @@
 <div id="turnos-anchor"></div>
 
 <div class="shifts-app">
-  <header class="shifts-topbar">
-    <nav class="shifts-tabs" id="areaTabs">
-      <a href="{% url 'turnos_extrusion' %}"  class="{% if request.resolver_match.url_name == 'turnos_extrusion' %}active{% endif %}">Extrusión</a>
-      <a href="{% url 'turnos_mezclado' %}"  class="{% if request.resolver_match.url_name == 'turnos_mezclado' %}active{% endif %}">Mezclado</a>
-      <a href="{% url 'turnos_laminado' %}"  class="{% if request.resolver_match.url_name == 'turnos_laminado' %}active{% endif %}">Laminado</a>
-      <a href="{% url 'turnos_impresion' %}" class="{% if request.resolver_match.url_name == 'turnos_impresion' %}active{% endif %}">Impresión</a>
-      <a href="{% url 'turnos_sellado' %}"   class="{% if request.resolver_match.url_name == 'turnos_sellado' %}active{% endif %}">Sellado</a>
-      <a href="{% url 'turnos_corte' %}"     class="{% if request.resolver_match.url_name == 'turnos_corte' %}active{% endif %}">Corte</a>
-    </nav>
-    <div class="shifts-controls">
-      <label>Fecha <input type="date" id="datePicker"></label>
-      <button id="clearDay" class="btn-outline" type="button">Limpiar día</button>
-    </div>
-  </header>
+ <header class="shifts-topbar">
+  <nav class="shifts-tabs" id="areaTabs">
+    <a href="{% url 'turnos_extrusion' %}" data-area="Extrusión"
+       class="{% if request.resolver_match.url_name == 'turnos_extrusion' %}active{% endif %}">Extrusión</a>
+    <a href="{% url 'turnos_mezclado' %}" data-area="Mezclado"
+       class="{% if request.resolver_match.url_name == 'turnos_mezclado' %}active{% endif %}">Mezclado</a>
+    <a href="{% url 'turnos_laminado' %}" data-area="Laminado"
+       class="{% if request.resolver_match.url_name == 'turnos_laminado' %}active{% endif %}">Laminado</a>
+    <a href="{% url 'turnos_impresion' %}" data-area="Impresión"
+       class="{% if request.resolver_match.url_name == 'turnos_impresion' %}active{% endif %}">Impresión</a>
+    <a href="{% url 'turnos_sellado' %}" data-area="Sellado"
+       class="{% if request.resolver_match.url_name == 'turnos_sellado' %}active{% endif %}">Sellado</a>
+    <a href="{% url 'turnos_corte' %}" data-area="Corte"
+       class="{% if request.resolver_match.url_name == 'turnos_corte' %}active{% endif %}">Corte</a>
+  </nav>
+
+  <!-- Título centrado -->
+  <div class="shifts-title">
+    <span id="rangeTitle"></span>
+  </div>
+
+  <!-- Controles de rango -->
+  <div class="shifts-controls">
+    <label>Desde <input type="date" id="dateFrom"></label>
+    <label>Hasta <input type="date" id="dateTo"></label>
+    <button id="applyRange" class="btn-outline" type="button">Aplicar</button>
+    <button id="clearDay" class="btn-outline" type="button">Limpiar</button>
+    <button id="exportPdf" class="btn" type="button">Exportar</button>
+  </div>
+</header>
 
   <div class="shifts-body">
     <!-- Sidebar de operadores -->
