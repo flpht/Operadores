@@ -6,8 +6,13 @@ urlpatterns = [
     # La vista principal que lista Y agrega
     path('', views.lista_operadores, name='lista_operadores'),
     path('turnos/', views.turnos, name='turnos'),
-        path("api/operadores", views.api_operadores_por_area, name="api_operadores_area"),
-
+    path("api/operadores", views.api_operadores_por_area, name="api_operadores_area"),
+    path('turnos/extrusion/',  views.turnos_extrusion,  name='turnos_extrusion'),
+    path('turnos/mezclado/',  views.turnos_mezclado,  name='turnos_mezclado'),
+    path('turnos/laminado/',  views.turnos_laminado,  name='turnos_laminado'),
+    path('turnos/impresion/', views.turnos_impresion, name='turnos_impresion'),
+    path('turnos/sellado/',   views.turnos_sellado,   name='turnos_sellado'),
+    path('turnos/corte/',     views.turnos_corte,     name='turnos_corte'),
 
     
     # La vista para eliminar (ej: /eliminar/1181/)

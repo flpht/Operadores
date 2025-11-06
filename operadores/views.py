@@ -7,6 +7,10 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from django.db import connection
+from datetime import date
+
+
+
 
 def lista_operadores(request):
     """
@@ -45,9 +49,7 @@ def lista_operadores(request):
                 'maquina': c.Maquina
             })
     
-    # --- ¡NUEVA LÓGICA PARA LA TABLA! ---
-    # 1. Creo un "mapa" de búsqueda rápido: {IdCentroCosto: NombreDelArea}
-    #    Ej: {1108: 'Extrusion', 1207: 'Impresion', 1319: 'Sellado'}
+    
     area_map = {c.IdCentroCosto: c.Area for c in centros_costo}
 
     # 2. Busco todos mis operadores
@@ -88,20 +90,22 @@ def turnos(request):
     
     return render(request, 'turnos.html', contexto)
 @require_GET
+
+
 def api_operadores_por_area(request):
     """
-    GET /turnos/api/operadores?area=Extrusión
-    Devuelve operadores de Operadores_Areas, opcionalmente filtrados por Activo=1 en RelojEmpleados.
+    GET /operadores/api/operadores?area=Impresión
+    Devuelve operadores de RRHH.dbo.Operadores_Areas filtrados por área.
+    (Si necesitas quitar el filtro de activos, elimina el JOIN o la condición o.Activo=1).
     """
-    area = request.GET.get("area")
+    area = (request.GET.get("area") or "").strip()
     if not area:
         return JsonResponse({"error": "Parámetro 'area' es requerido"}, status=400)
 
-    # IMPORTANTE: si no quieres filtrar por activos, quita el INNER JOIN y la condición o.Activo=1
     sql = """
         SELECT oa.Codoperador, oa.Nombre, oa.Area
-        FROM Operadores_Areas AS oa
-        INNER JOIN RelojEmpleados AS o
+        FROM dbo.Operadores_Areas AS oa
+        INNER JOIN dbo.RelojEmpleados AS o
             ON o.CodigoID = oa.Codoperador
         WHERE oa.Area = %s
           AND o.Activo = 1
@@ -111,8 +115,32 @@ def api_operadores_por_area(request):
         cur.execute(sql, [area])
         rows = cur.fetchall()
 
-    items = [
-        {"CodigoID": r[0], "Nombre": r[1], "Rol": "Operador"}  # si más adelante tienes rol, cámbialo aquí
-        for r in rows
-    ]
+    items = [{"CodigoID": r[0], "Nombre": r[1], "Rol": "Operador"} for r in rows]
     return JsonResponse({"items": items})
+
+def _ctx():
+    return { "hoy": date.today() }
+
+def turnos_extrusion(request):  return render(request, 'turnos/turnos_extrusion.html',  _ctx())
+def turnos_mezclado(request):   return render(request, 'turnos/turnos_mezclado.html',   _ctx())
+def turnos_laminado(request):   return render(request, 'turnos/turnos_laminado.html',   _ctx())
+def turnos_impresion(request):
+    sections = [
+        {"key": "imp_encargado", "title": "Encargado de Clisses", "cap": 1},
+        {"key": "imp_encargado", "title": "Encargado de Sección", "cap": 1},
+        {"key": "imp_colorista", "title": "Tintas / Colorista", "cap": 3},
+        {"key": "imp_comexi", "title": "Operadores Comexi 1", "cap": 3},
+        {"key": "imp_comexi", "title": "Operadores Comexi 2", "cap": 1},
+        {"key": "imp_primaflex", "title": "Operador Primaflex", "cap": 1},
+        {"key": "imp_feva2", "title": "Operadores Feva 2", "cap": 2},
+        {"key": "imp_apoyo", "title": "Apoyo Impresión", "cap": 3},
+        {"key": "imp_apoyo", "title": "Mecat./Lavd.Bandejas", "cap": 2},
+
+    ]
+    return render(
+        request,
+        "turnos/turnos_impresion.html",
+        {"sections": sections}  # <- aquí viaja tu plantilla de roles
+    )
+def turnos_sellado(request):    return render(request, 'turnos/turnos_sellado.html',    _ctx())
+def turnos_corte(request):      return render(request, 'turnos/turnos_corte.html',      _ctx())

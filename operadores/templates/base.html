@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
-{% load static %} <head>
+{% load static %}
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Operadores</title>
-     <link rel="stylesheet" href="{% static 'styles/turnos.css' %}">
+    <link rel="stylesheet" href="{% static 'styles/turnos.css' %}">
     <link rel="stylesheet" href="{% static 'styles/lista_operadores.css' %}">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
 </head>
 <body>
-    
     <nav class="header-nav">
+        <span class="header-logo">
+            <img src="{% static 'img/logo_montosa.png' %}" alt="Logo Montesa" class="noselect" draggable="false">
+        </span>
         <a href="{% url 'lista_operadores' %}" id="btn-show-list" class="active">
             <i class="fa-solid fa-list-ul"></i> OPERADORES
         </a>
-       
-        <a href="{% url 'turnos' %}">
+        <a href="{% url 'turnos_impresion' %}">
             <i class="fa-solid fa-calendar-days"></i> TURNOS
         </a>
     </nav>
@@ -26,7 +26,7 @@
         {% block content %}{% endblock %}
     </div>
 
-    <script src="{% static 'js/turnos.js' %}"></script>
+    <script src="{% static 'js/shifts.js' %}"></script>
     <script src="{% static 'js/operadores.js' %}"></script>
 </body>
 </html>
