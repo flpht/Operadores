@@ -31,14 +31,14 @@
   </div>
 
   <!-- Controles de rango -->
-  <div class="shifts-controls">
-    <label>Desde <input type="date" id="dateFrom"></label>
-    <label>Hasta <input type="date" id="dateTo"></label>
-    <button id="applyRange" class="btn-outline" type="button">Aplicar</button>
-    <button id="clearDay" class="btn-outline" type="button">Limpiar</button>
-    <button id="exportPdf" class="btn" type="button">Exportar</button>
-  </div>
-</header>
+    <!-- CONTROLES NUEVOS (rango + exportar) -->
+    <div class="shifts-controls" id="controls-range">
+      <label>Desde <input type="date" id="fromDate"></label>
+      <label>Hasta <input type="date" id="toDate"></label>
+      <button id="btnApplyRange" class="btn-outline" type="button">Aplicar</button>
+      <button id="btnExportPdf" class="btn" type="button">Exportar</button>
+    </div>
+  </header>
 
   <div class="shifts-body">
     <!-- Sidebar de operadores -->
@@ -57,7 +57,7 @@
         <header>
           <h4>
             Turno {{ forloop.counter }} — 
-            {% if forloop.counter == 1 %}Mañana{% elif forloop.counter == 2 %}Tarde{% else %}Noche{% endif %}
+            {% if forloop.counter == 1 %}Mañana 7:00 a 15:00{% elif forloop.counter == 2 %}Tarde 14:00 a 22:00 {% else %}Noche 22:00 a 7:00 {% endif %}
           </h4>
         </header>
 

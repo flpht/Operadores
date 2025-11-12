@@ -485,8 +485,16 @@ async function exportPdf() {
   }
 }
 
-// wire al botón
 document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('exportPdf');
-  if (btn) btn.addEventListener('click', exportPdf);
+  const btn = document.getElementById('btnExportPdf');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const from = document.getElementById('fromDate')?.value || '';
+    const to   = document.getElementById('toDate')?.value || '';
+    if (!from || !to) { alert('Selecciona fecha Desde y Hasta'); return; }
+    const url = `/turnos/impresion/pdf?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&area=Impresión`;
+    window.open(url, '_blank');
+  });
 });
+

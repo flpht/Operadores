@@ -1,29 +1,26 @@
 # operadores/views.py
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Operador, AreaCentroCosto 
-from .forms import OperadorForm
-import json
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import (
+    HttpResponse, HttpResponseBadRequest, JsonResponse
+)
 from django.views.decorators.http import require_GET
-from django.db import connection
-from datetime import date
-from django.utils.dateparse import parse_date
-from django.views.decorators.http import require_POST
+from django.utils import timezone
 from django.template.loader import render_to_string
-from datetime import datetime
+from django.db import connection
 
-from django.http import HttpResponse, JsonResponse
+from datetime import date, datetime
+import json
+import os
+
+from .models import Operador, AreaCentroCosto
+from .forms import OperadorForm
 
 
-
-
+# =========================
+# Pantalla principal (CRUD)
+# =========================
 def lista_operadores(request):
-    """
-    Esta es mi vista principal. Maneja la LISTA (GET)
-    y también el formulario para AGREGAR (POST).
-    """
-    
     if request.method == 'POST':
         form = OperadorForm(request.POST)
         if form.is_valid():
@@ -39,37 +36,22 @@ def lista_operadores(request):
     else:
         form = OperadorForm()
 
-    # --- LÓGICA PARA LOS DROPDOWNS ---
-    # (Esta parte ya la teníamos, la usamos para los dropdowns Y para el mapa)
     centros_costo = AreaCentroCosto.objects.all()
-    
+
     areas_unicas = sorted(list(set(c.Area for c in centros_costo if c.Area)))
-    areas_data = {}
-    for area in areas_unicas:
-        areas_data[area] = []
-    
+    areas_data = {a: [] for a in areas_unicas}
     for c in centros_costo:
         if c.Area in areas_data:
-            areas_data[c.Area].append({
-                'id': int(c.IdCentroCosto), 
-                'maquina': c.Maquina
-            })
-    
-    
+            areas_data[c.Area].append({'id': int(c.IdCentroCosto), 'maquina': c.Maquina})
+
     area_map = {c.IdCentroCosto: c.Area for c in centros_costo}
 
-    # 2. Busco todos mis operadores
     operadores = Operador.objects.filter(Activo=True).order_by('Nombre')
-
-    # 3. Recorro los operadores y les "inyecto" el nombre del Área
     for op in operadores:
-        # op.CentroCosto es el ID (ej: 1108)
-        # area_map.get(...) busca ese ID en el mapa
-        op.area_nombre = area_map.get(op.CentroCosto, '---') # '---' si no lo encuentra
-    # --- FIN DE LA NUEVA LÓGICA ---
-    
+        op.area_nombre = area_map.get(op.CentroCosto, '---')
+
     contexto = {
-        'operadores': operadores, # Mi lista de operadores ahora tiene '.area_nombre'
+        'operadores': operadores,
         'form': form,
         'areas_unicas': areas_unicas,
         'areas_data_json': json.dumps(areas_data),
@@ -78,31 +60,33 @@ def lista_operadores(request):
 
 
 def eliminar_operador(request, pk):
-    """
-    Mi vista para eliminar (con mensaje de éxito).
-    """
     operador = get_object_or_404(Operador, CodigoID=pk)
-    
+
     if request.method == 'GET':
         return render(request, 'eliminar_operador.html', {'operador': operador})
 
     elif request.method == 'POST':
         messages.success(request, f"Operador '{operador.Nombre}' eliminado correctamente.")
         operador.delete()
-        return redirect('lista_operadores')
+        return redirect('lista_operajadores')
 
+
+# ==============
+# Pantalla Turnos
+# ==============
 def turnos(request):
-    contexto = {} 
-    
-    return render(request, 'turnos.html', contexto)
+    return render(request, 'turnos.html', {})
 
 
+# =====================
+# API: Operadores por área
+# =====================
 @require_GET
 def api_operadores_por_area(request):
     """
     GET /api/operadores?area=Impresión
-    - Incluye SIEMPRE Codoperador 0 y 1111 (sin importar el área)
-    - Para los demás: por área (case/accent-insensitive), internos activos o externos.
+    - Incluye SIEMPRE Codoperador 0 y 1111
+    - Para el resto: por área (case/accent-insensitive), internos activos o externos.
     """
     area = request.GET.get("area")
     if not area:
@@ -114,11 +98,11 @@ def api_operadores_por_area(request):
         LEFT JOIN RelojEmpleados AS o
                ON o.CodigoID = oa.Codoperador
         WHERE
-              oa.Codoperador IN (0, 1111)                      -- SIEMPRE
+              oa.Codoperador IN (0, 1111)
            OR (
                 (LTRIM(RTRIM(oa.Area)) COLLATE Modern_Spanish_CI_AI =
-                 %s COLLATE Modern_Spanish_CI_AI)             -- área (tolerante)
-             AND (o.CodigoID IS NULL OR o.Activo = 1)          -- externo o activo
+                 %s COLLATE Modern_Spanish_CI_AI)
+             AND (o.CodigoID IS NULL OR o.Activo = 1)
               )
         ORDER BY
             CASE WHEN oa.Codoperador IN (0,1111) THEN 0 ELSE 1 END,
@@ -132,134 +116,160 @@ def api_operadores_por_area(request):
     return JsonResponse({"items": items})
 
 
+# =========
+# Subvistas
+# =========
 def _ctx():
-    return { "hoy": date.today() }
+    return {"hoy": date.today()}
 
 def turnos_extrusion(request):  return render(request, 'turnos/turnos_extrusion.html',  _ctx())
 def turnos_mezclado(request):   return render(request, 'turnos/turnos_mezclado.html',   _ctx())
 def turnos_laminado(request):   return render(request, 'turnos/turnos_laminado.html',   _ctx())
+
 def turnos_impresion(request):
     sections = [
         {"key": "imp_encargado", "title": "Encargado de Clisses", "cap": 1},
-        {"key": "imp_apoyo", "title": "Montajista", "cap": 2},
-        {"key": "imp_encargado", "title": "Encargado de Sección", "cap": 1},
-        {"key": "imp_colorista", "title": "Tintas / Colorista", "cap": 3},
-        {"key": "imp_comexi", "title": "Operadores Comexi 1", "cap": 3},
-        {"key": "imp_comexi", "title": "Operadores Comexi 2", "cap": 1},
-        {"key": "imp_primaflex", "title": "Operador Primaflex", "cap": 1},
-        {"key": "imp_feva2", "title": "Operadores Feva 2", "cap": 2},
-        {"key": "imp_apoyo", "title": "Apoyo Impresión", "cap": 3},
-        {"key": "imp_apoyo", "title": "Mecat./Lavd.Bandejas", "cap": 2},
-        
-
-
+        {"key": "imp_apoyo",     "title": "Montajista",             "cap": 2},
+        {"key": "imp_encargado", "title": "Encargado de Sección",   "cap": 1},
+        {"key": "imp_colorista", "title": "Tintas / Colorista",     "cap": 3},
+        {"key": "imp_comexi",    "title": "Operadores Comexi 1",    "cap": 3},
+        {"key": "imp_comexi",    "title": "Operadores Comexi 2",    "cap": 1},
+        {"key": "imp_primaflex", "title": "Operador Primaflex",     "cap": 1},
+        {"key": "imp_feva2",     "title": "Operadores Feva 2",      "cap": 2},
+        {"key": "imp_apoyo",     "title": "Apoyo Impresión",        "cap": 3},
+        {"key": "imp_apoyo",     "title": "Mecat./Lavd.Bandejas",   "cap": 2},
     ]
-    return render(
-        request,
-        "turnos/turnos_impresion.html",
-        {"sections": sections}  # <- aquí viaja tu plantilla de roles
-    )
+    return render(request, "turnos/turnos_impresion.html", {"sections": sections})
+
 def turnos_sellado(request):    return render(request, 'turnos/turnos_sellado.html',    _ctx())
 def turnos_corte(request):      return render(request, 'turnos/turnos_corte.html',      _ctx())
 
 
-
-
-
-
-
+# =========================
+# Exportación a PDF (wkhtml)
+# =========================
 try:
-    from weasyprint import HTML, CSS
-    WEASYPRINT_OK = True
+    import pdfkit
 except Exception:
-    WEASYPRINT_OK = False
+    pdfkit = None
 
+WKHTML_BIN = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"  # Ajusta si corresponde.
 
+MESES_ES = [
+    "enero","febrero","marzo","abril","mayo","junio",
+    "julio","agosto","septiembre","octubre","noviembre","diciembre"
+]
 
+def _fmt_spanish(d: date) -> str:
+    return f"{d.day} de {MESES_ES[d.month-1]}"
 
-
-@require_POST
-def exportar_turnos_pdf(request):
+def _normalize_roles(raw_roles):
     """
-    Espera JSON:
-    {
-      "area": "Impresión",
-      "date_from": "2025-11-03",
-      "date_to":   "2025-11-09",
-      "data": { date, shifts, absences },  // serializeAssignments()
-      "operators": { "101": "NOMBRE", ... } // opcional (map id->nombre)
+    Convierte variantes a {title, cap, t1, t2, t3} con listas de nombres.
+    Acepta claves: t1/t2/t3, turno1/2/3, mañana/manana, tarde, noche.
+    """
+    norm = []
+    for r in (raw_roles or []):
+        title = r.get("title") or r.get("puesto") or r.get("seccion") or ""
+        cap   = r.get("cap") or r.get("capacity") or r.get("capacidad") or 0
+
+        t1 = r.get("t1") or r.get("turno1") or r.get("mañana") or r.get("manana") or []
+        t2 = r.get("t2") or r.get("turno2") or r.get("tarde")  or []
+        t3 = r.get("t3") or r.get("turno3") or r.get("noche")  or []
+
+        t1 = [str(x) for x in (t1 or [])]
+        t2 = [str(x) for x in (t2 or [])]
+        t3 = [str(x) for x in (t3 or [])]
+
+        norm.append({"title": title, "cap": cap, "t1": t1, "t2": t2, "t3": t3})
+    return norm
+
+
+def turnos_impresion_pdf(request):
+    """
+    URL: /turnos/impresion/pdf?from=YYYY-MM-DD&to=YYYY-MM-DD&area=Impresión
+    - GET requiere from/to/area.
+    - Si el frontend realiza POST con JSON {"roles":[...]}, se imprimen los nombres por turno.
+    """
+    d1 = request.GET.get("from")
+    d2 = request.GET.get("to")
+    area = request.GET.get("area", "Impresión")
+
+    if not d1 or not d2:
+        return HttpResponseBadRequest("Faltan parámetros 'from' y 'to' (YYYY-MM-DD).")
+    try:
+        dt1 = datetime.strptime(d1, "%Y-%m-%d").date()
+        dt2 = datetime.strptime(d2, "%Y-%m-%d").date()
+    except ValueError:
+        return HttpResponseBadRequest("Formato de fecha inválido. Usa YYYY-MM-DD.")
+
+    # Recibir roles desde el frontend (POST JSON {"roles":[...]})
+    roles = []
+    if request.method == "POST":
+        try:
+            payload = json.loads(request.body.decode("utf-8") or "{}")
+            roles = _normalize_roles(payload.get("roles") or [])
+        except Exception:
+            roles = []
+
+    # Fallback si no llegan roles (estructura de secciones)
+    sections = [
+        {"key": "imp_encargado", "title": "Encargado de Clisses", "cap": 1},
+        {"key": "imp_apoyo",     "title": "Montajista",             "cap": 2},
+        {"key": "imp_encargado", "title": "Encargado de Sección",   "cap": 1},
+        {"key": "imp_colorista", "title": "Tintas / Colorista",     "cap": 3},
+        {"key": "imp_comexi",    "title": "Operadores Comexi 1",    "cap": 3},
+        {"key": "imp_comexi",    "title": "Operadores Comexi 2",    "cap": 1},
+        {"key": "imp_primaflex", "title": "Operador Primaflex",     "cap": 1},
+        {"key": "imp_feva2",     "title": "Operadores Feva 2",      "cap": 2},
+        {"key": "imp_apoyo",     "title": "Apoyo Impresión",        "cap": 3},
+        {"key": "imp_apoyo",     "title": "Mecat./Lavd.Bandejas",   "cap": 2},
+    ]
+
+    week_number = dt1.isocalendar()[1]
+    ctx = {
+        "area": area,
+        "from": dt1,
+        "to": dt2,
+        "from_label": _fmt_spanish(dt1),
+        "to_label": _fmt_spanish(dt2),
+        "week_number": week_number,
+        "generated_at": timezone.localtime().strftime("%d-%m-%Y %H:%M"),
+        "roles": roles,               # si viene POST, la plantilla mostrará nombres
+        "sections": sections,         # fallback
+        "shifts_meta": [
+            {"n": 1, "label": "Mañana 07:00–15:00"},
+            {"n": 2, "label": "Tarde 14:00–22:00"},
+            {"n": 3, "label": "Noche 22:00–07:00"},
+        ],
     }
-    """
-    if not WEASYPRINT_OK:
-        return JsonResponse({"error": "WeasyPrint no disponible en el servidor."}, status=500)
+
+    html = render_to_string("turnos/pdf_impresion.html", ctx)
+
+    if pdfkit is None:
+        return JsonResponse({"error": "pdfkit (wkhtmltopdf) no instalado en el servidor."}, status=500)
+    if not os.path.exists(WKHTML_BIN):
+        return JsonResponse({"error": f"wkhtmltopdf no encontrado en {WKHTML_BIN}."}, status=500)
+
+    config = pdfkit.configuration(wkhtmltopdf=WKHTML_BIN)
+    options = {
+    "page-size": "A4",
+    "orientation": "Landscape",      # <= fuerza horizontal
+    "encoding": "UTF-8",
+    "margin-top": "10mm",
+    "margin-right": "10mm",
+    "margin-bottom": "10mm",
+    "margin-left": "10mm",
+    "dpi": 300,
+    "print-media-type": True,        # <= respeta tu CSS @page
+}
+
 
     try:
-        payload = json.loads(request.body.decode('utf-8'))
-    except Exception:
-        return JsonResponse({"error":"JSON inválido"}, status=400)
+        pdf_bytes = pdfkit.from_string(html, False, configuration=config, options=options)
+    except Exception as e:
+        return JsonResponse({"error": f"Error generando PDF: {e}"}, status=500)
 
-    area = payload.get('area') or 'Planta'
-    date_from = parse_date(payload.get('date_from') or '')
-    date_to   = parse_date(payload.get('date_to') or '')
-    data = payload.get('data') or {}
-    opmap = payload.get('operators') or {}
-
-    # Deriva semana/rango legible
-    def fmt(d):
-        if not d: return ''
-        # formato: dd/mm/yyyy
-        return d.strftime('%d/%m/%Y')
-
-    rango_txt = ''
-    semana_txt = ''
-    if date_from and date_to:
-        rango_txt = f"desde el {fmt(date_from)} hasta el {fmt(date_to)}"
-        # “semana XX (año)” basado en ISO week del 'date_from'
-        iso = date_from.isocalendar()  # (year, week, weekday)
-        semana_txt = f"Semana {iso[1]} - {iso[0]}"
-    elif data.get('date'):
-        # compat: si el user solo usa date único
-        try:
-            unica = datetime.strptime(data['date'], '%Y-%m-%d').date()
-            rango_txt = f"del {fmt(unica)}"
-            iso = unica.isocalendar()
-            semana_txt = f"Semana {iso[1]} - {iso[0]}"
-        except Exception:
-            pass
-
-    # En el template transformaremos ids a nombres usando este map
-    context = {
-        "area": area,
-        "rango_txt": rango_txt,
-        "semana_txt": semana_txt,
-        "data": data,
-        "operators": opmap  # dict {id(str/int): nombre}
-    }
-
-    html_string = render_to_string('turnos/pdf_turno.html', context)
-    # Estilos de impresión (A4 apaisado, tipografías, etc.)
-    PRINT_CSS = """
-      @page { size: A4 landscape; margin: 14mm; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: #111827; }
-      h1 { font-size: 20px; margin: 0 0 8px; }
-      h2 { font-size: 16px; margin: 0 0 14px; color:#374151; }
-      .muted { color:#6B7280; }
-      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-      .col { border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; }
-      .col h3 { font-size: 14px; margin: 0 0 8px; }
-      .section { margin-bottom: 8px; }
-      .section-title { font-weight: 600; font-size: 12px; margin-bottom: 4px; display:flex; justify-content:space-between; }
-      .pill { color:#111827; background:#F3F4F6; border:1px solid #E5E7EB; display:inline-block; padding: 2px 6px; border-radius: 999px; margin: 2px 4px 0 0; font-size: 11px; }
-      .abs { margin-top: 12px; border-top:1px dashed #E5E7EB; padding-top: 10px; }
-      .abs h4 { margin: 0 0 6px; font-size: 12px; }
-      table.meta { width:100%; margin: 10px 0 14px; font-size:12px; border-collapse: collapse; }
-      table.meta td { padding: 4px 6px; border: 1px solid #E5E7EB; }
-    """
-
-    pdf = HTML(string=html_string, base_url=request.build_absolute_uri('/')).write_pdf(
-        stylesheets=[CSS(string=PRINT_CSS)]
-    )
-    filename = f"turnos_{area.replace(' ','_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
-    resp = HttpResponse(pdf, content_type='application/pdf')
-    resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="turnos_{area}_sem{week_number}.pdf"'
     return resp
