@@ -13,7 +13,7 @@ urlpatterns = [
     path('turnos/impresion/', views.turnos_impresion, name='turnos_impresion'),
     path('turnos/sellado/',   views.turnos_sellado,   name='turnos_sellado'),
     path('turnos/corte/',     views.turnos_corte,     name='turnos_corte'),
-
+    path("turnos/exportar/", views.exportar_turnos_pdf, name="exportar_turnos_pdf"),
     path("turnos/impresion/pdf", views.turnos_impresion_pdf, name="turnos_impresion_pdf"),
 
     # La vista para eliminar (ej: /eliminar/1181/)

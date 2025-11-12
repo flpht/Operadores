@@ -1,9 +1,8 @@
 # operadores/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.http import (
-    HttpResponse, HttpResponseBadRequest, JsonResponse
-)
+from django.http import (HttpResponse, HttpResponseBadRequest, JsonResponse)
+from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
 from django.utils import timezone
 from django.template.loader import render_to_string
@@ -264,6 +263,117 @@ def turnos_impresion_pdf(request):
     "print-media-type": True,        # <= respeta tu CSS @page
 }
 
+
+    try:
+        pdf_bytes = pdfkit.from_string(html, False, configuration=config, options=options)
+    except Exception as e:
+        return JsonResponse({"error": f"Error generando PDF: {e}"}, status=500)
+
+    resp = HttpResponse(pdf_bytes, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="turnos_{area}_sem{week_number}.pdf"'
+    return resp
+
+
+@require_POST
+def exportar_turnos_pdf(request):
+    """
+    Recibe un POST JSON desde shifts.js con el estado del tablero
+    y genera el PDF con los datos asignados.
+    """
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("JSON inválido.")
+
+    # 1. Extraer datos del JSON enviado por el frontend
+    area = payload.get("area", "Planta")
+    d1 = payload.get("date_from")
+    d2 = payload.get("date_to")
+    ops_map = payload.get("operators", {})
+    assignments = payload.get("data", {}).get("shifts", {})
+
+    if not d1 or not d2:
+        return HttpResponseBadRequest("Faltan 'date_from' y 'date_to'.")
+    
+    try:
+        dt1 = datetime.strptime(d1, "%Y-%m-%d").date()
+        dt2 = datetime.strptime(d2, "%Y-%m-%d").date()
+    except ValueError:
+        return HttpResponseBadRequest("Formato de fecha inválido. Usa YYYY-MM-DD.")
+
+    # 2. Obtener la ESTRUCTURA de secciones
+    #    (Esto debe coincidir con la ESTRUCTURA de 'turnos_impresion.html')
+    #    Idealmente, esto no estaría hardcodeado, pero seguimos tu patrón actual.
+    sections = [
+        {"key": "imp_encargado", "title": "Encargado de Clisses", "cap": 1},
+        {"key": "imp_apoyo",     "title": "Montajista",              "cap": 2},
+        {"key": "imp_encargado", "title": "Encargado de Sección",    "cap": 1},
+        {"key": "imp_colorista", "title": "Tintas / Colorista",      "cap": 3},
+        {"key": "imp_comexi",    "title": "Operadores Comexi 1",     "cap": 3},
+        {"key": "imp_comexi",    "title": "Operadores Comexi 2",     "cap": 1},
+        {"key": "imp_primaflex", "title": "Operador Primaflex",      "cap": 1},
+        {"key": "imp_feva2",     "title": "Operadores Feva 2",       "cap": 2},
+        {"key": "imp_apoyo",     "title": "Apoyo Impresión",         "cap": 3},
+        {"key": "imp_apoyo",     "title": "Mecat./Lavd.Bandejas",    "cap": 2},
+    ]
+
+    # 3. Transformar los datos del JSON a la lista 'roles' que el PDF espera
+    roles = []
+    for s in sections:
+        section_key = s.get("key")
+        
+        # Función interna para buscar operadores por ID y convertirlos a nombres
+        def get_names_for_shift(shift_num_str):
+            try:
+                # 1. Buscar IDs de operador (ej: [101, 105])
+                op_ids = assignments.get(shift_num_str, {})\
+                                  .get("sections", {})\
+                                  .get(section_key, {})\
+                                  .get("ops", [])
+                
+                # 2. Convertir IDs a Nombres (ej: ["Juan Perez", "Ana Gomez"])
+                #    Usamos ops_map (el mapa {id: nombre} que envió el JS)
+                #    El 'str(op_id)' es crucial porque las claves del JSON map pueden ser strings
+                return [ops_map.get(str(op_id), f"ID {op_id}?") for op_id in op_ids]
+            except Exception:
+                return []
+
+        roles.append({
+            "title": s.get("title"),
+            "cap": s.get("cap"),
+            "t1": get_names_for_shift("1"),
+            "t2": get_names_for_shift("2"),
+            "t3": get_names_for_shift("3"),
+        })
+
+    # 4. Contexto para la plantilla PDF (similar a tu vista GET)
+    week_number = dt1.isocalendar()[1]
+    ctx = {
+        "area": area,
+        "from": dt1,
+        "to": dt2,
+        "from_label": _fmt_spanish(dt1),
+        "to_label": _fmt_spanish(dt2),
+        "week_number": week_number,
+        "generated_at": timezone.localtime().strftime("%d-%m-%Y %H:%M"),
+        "roles": roles, # ¡AHORA 'roles' SÍ TIENE LOS DATOS!
+        "sections": [], # No lo usamos, ya que 'roles' está lleno
+    }
+
+    # 5. Lógica de renderizado de PDF (copiada de tu 'turnos_impresion_pdf')
+    html = render_to_string("turnos/pdf_impresion.html", ctx)
+
+    if pdfkit is None:
+        return JsonResponse({"error": "pdfkit (wkhtmltopdf) no instalado."}, status=500)
+    if not os.path.exists(WKHTML_BIN):
+        return JsonResponse({"error": f"wkhtmltopdf no en {WKHTML_BIN}."}, status=500)
+
+    config = pdfkit.configuration(wkhtmltopdf=WKHTML_BIN)
+    options = {
+        "page-size": "A4", "orientation": "Landscape", "encoding": "UTF-8",
+        "margin-top": "10mm", "margin-right": "10mm", "margin-bottom": "10mm",
+        "margin-left": "10mm", "dpi": 300, "print-media-type": True,
+    }
 
     try:
         pdf_bytes = pdfkit.from_string(html, False, configuration=config, options=options)

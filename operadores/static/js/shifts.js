@@ -292,8 +292,8 @@ function fmtRangoEs(d1, d2){
 }
 
 function updateRangeTitle() {
-  const from = $('#dateFrom') && $('#dateFrom').value;
-  const to   = $('#dateTo') && $('#dateTo').value;
+  const from = $('#fromDate') && $('#fromDate').value;
+  const to   = $('#toDate') && $('#toDate').value;
   const area = currentTabName() || 'Planta';
   const span = $('#rangeTitle');
   if (!span) return;
@@ -305,7 +305,7 @@ function updateRangeTitle() {
 }
 
 function wireDateRange() {
-  const df = $('#dateFrom'), dt = $('#dateTo'), apply = $('#applyRange');
+  const df = $('#fromDate'), dt = $('#toDate'), apply = $('#applyRange');
   if (!df || !dt || !apply) return;
 
   const savedFrom = localStorage.getItem('turnos_from');
@@ -360,8 +360,8 @@ function wireClear() {
 
 // =============== SERIALIZAR ===============
 function serializeAssignments() {
-  const from = ($('#dateFrom') && $('#dateFrom').value) || null;
-  const to   = ($('#dateTo') && $('#dateTo').value) || null;
+  const from = ($('#fromDate') && $('#fromDate').value) || null;
+  const to   = ($('#toDate') && $('#toDate').value) || null;
   const week = from ? getISOWeekNumber(new Date(from + 'T00:00:00Z')) : null;
 
   const shifts = {};
@@ -440,14 +440,14 @@ function buildOpNameMap() {
 async function exportPdf() {
   const payload = serializeAssignments();
   const area = currentAreaName();
-  const dateFrom = document.getElementById('dateFrom')?.value || '';
-  const dateTo   = document.getElementById('dateTo')?.value || '';
+  const fromDate = document.getElementById('fromDate')?.value || '';
+  const toDate   = document.getElementById('toDate')?.value || '';
   const opsMap   = buildOpNameMap();
 
   const body = {
     area,
-    date_from: dateFrom,
-    date_to: dateTo,
+    date_from: fromDate,
+    date_to: toDate,
     data: payload,
     operators: opsMap
   };
@@ -473,7 +473,7 @@ async function exportPdf() {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const fname = `turnos_${(area||'Planta')}_${(dateFrom||'')}_${(dateTo||'')}.pdf`.replace(/\s+/g,'_');
+    const fname = `turnos_${(area||'Planta')}_${(fromDate||'')}_${(toDate||'')}.pdf`.replace(/\s+/g,'_');
     a.href = url; a.download = fname;
     document.body.appendChild(a);
     a.click();
@@ -485,16 +485,37 @@ async function exportPdf() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const btn = document.getElementById('btnExportPdf');
-  if (!btn) return;
+// =============== INIT ===============
+document.addEventListener('DOMContentLoaded', function(){
+  // Si usas módulos por área, puedes llamar aquí:
+  // renderTemplateForArea(currentTabName());
 
-  btn.addEventListener('click', () => {
-    const from = document.getElementById('fromDate')?.value || '';
-    const to   = document.getElementById('toDate')?.value || '';
-    if (!from || !to) { alert('Selecciona fecha Desde y Hasta'); return; }
-    const url = `/turnos/impresion/pdf?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&area=Impresión`;
-    window.open(url, '_blank');
-  });
+  loadSidebar();
+  wireDropZones();
+  wireSearch();
+  wireDateRange(); // NUEVO: rango + título
+  wireClear();
+  refreshCounts();
+
+  // === BLOQUE CORREGIDO ===
+  const btnExport = document.getElementById('btnExportPdf');
+  if (btnExport) {
+    btnExport.addEventListener('click', function(e){
+      e.preventDefault();
+      
+      // === AQUÍ ESTÁ EL CAMBIO ===
+      const from = document.getElementById('fromDate')?.value || ''; // Era 'fromDate'
+      const to   = document.getElementById('toDate')?.value || '';   // Era 'toDate'
+      // =========================
+
+if (!from || !to) { 
+alert('Por favor, selecciona un rango de fechas (Desde y Hasta) antes de exportar.'); 
+ return; 
+ }
+      // Llama a la función POST que YA TENÍAS definida
+ exportPdf(); 
+    });
+  }
+// ========================
+
 });
-
